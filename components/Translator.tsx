@@ -1,86 +1,88 @@
 import React, { useEffect, useRef, useState } from "react";
 
-type Lang = "ht" | "en";
+type Direction = "ht-en" | "en-ht";
 
 export default function Translator() {
-  const recognitionRef = useRef<any>(null);
-  const [listening, setListening] = useState(false);
-
+  const [direction, setDirection] = useState<Direction>("ht-en");
   const [input, setInput] = useState("");
-  const [lang, setLang] = useState<Lang>("ht");
+  const [translated, setTranslated] = useState("");
+  const [listening, setListening] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
 
-  useEffect(() => {
-    return () => {
-      try {
-        recognitionRef.current?.stop();
-      } catch {}
-    };
-  }, []);
+  const recognitionRef = useRef<any>(null);
+  const debounceRef = useRef<number | null>(null);
+  const lastFinalRef = useRef<string>("");
 
-  const startListening = (nextLang: Lang) => {
-    setLang(nextLang);
-
-    const SR =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-    if (!SR) {
-      alert("Browser sa pa sipòte Speech Recognition. Eseye Google Chrome.");
+  async function translateNow(text: string, dir: Direction) {
+    const t = text.trim();
+    if (!t) {
+      setTranslated("");
+      setErr("");
       return;
     }
 
-    const recognition = new SR();
-    recognitionRef.current = recognition;
+    setLoading(true);
+    setErr("");
 
-    recognition.lang = nextLang === "ht" ? "ht-HT" : "en-US";
-    recognition.interimResults = true;
-    recognition.continuous = false;
-
-    recognition.onstart = () => setListening(true);
-    recognition.onerror = () => setListening(false);
-    recognition.onend = () => setListening(false);
-
-    recognition.onresult = (event: any) => {
-      let transcript = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
-      }
-      setInput(transcript.trim());
-    };
-
-    recognition.start();
-  };
-
-  const stopListening = () => {
     try {
-      recognitionRef.current?.stop();
-    } catch {}
-    setListening(false);
-  };
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: t, direction: dir }),
+      });
 
-  return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: 16 }}>
-      <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 10 }}>
-        Translator
-      </h2>
+      const data = await res.json();
 
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
-        <button onClick={() => startListening("ht")}>🎤 Pale Kreyòl</button>
-        <button onClick={() => startListening("en")}>🎤 Speak English</button>
-        <button onClick={stopListening} disabled={!listening}>
-          ⏹ Stop
-        </button>
+      if (!res.ok) {
+        setTranslated("");
+        setErr(data?.error || "Gen erè pandan tradiksyon an.");
+      } else {
+        setTranslated(data?.translated || "");
+        setErr("");
+      }
+    } catch {
+      setTranslated("");
+      setErr("Pa ka konekte ak /api/translate.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-        <span style={{ marginLeft: 10 }}>
-          {listening ? "🟢 Listening..." : "⚪ Not listening"}
-        </span>
-      </div>
+  // ✅ OTOMATIK: chak fwa input oswa direction chanje -> tradui
+  useEffect(() => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
 
-      <textarea
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        placeholder={lang === "ht" ? "Ekri oswa pale an kreyòl..." : "Type or speak in English..."}
-        style={{ width: "100%", minHeight: 160, padding: 12 }}
-      />
-    </div>
-  );
-}
+    debounceRef.current = window.setTimeout(() => {
+      translateNow(input, direction);
+    }, 450);
+
+    return () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    };
+  }, [input, direction]);
+
+  // ✅ Setup SpeechRecognition (pale)
+  useEffect(() => {
+    const SR =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SR) return;
+
+    const rec = new SR();
+    rec.interimResults = true;
+    rec.continuous = true;
+
+    rec.onresult = (e: any) => {
+      let interim = "";
+      let finals = lastFinalRef.current;
+
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const chunk = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finals = (finals + " " + chunk).trim();
+        else interim += chunk;
+      }
+
+      lastFinalRef.current = finals;
+      const combined = (finals + " " + interim).trim();
+      if (combined) setInput(combined); // <- sa fè li trad
