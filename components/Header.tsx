@@ -1,3 +1,4 @@
+Kreyòl Connect – Translator
 
 import React from 'react';
 
