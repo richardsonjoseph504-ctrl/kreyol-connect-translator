@@ -1,4 +1,13 @@
-Kreyòl Connect – Translator
+import React from 'react';
+
+export default function Header() {
+  return (
+    <header style={{ padding: '12px', borderBottom: '1px solid #ddd' }}>
+      <h1>Kreyòl Connect – Translator</h1>
+    </header>
+  );
+}
+
 
 import React from 'react';
 
