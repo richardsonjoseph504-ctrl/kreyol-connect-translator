@@ -1,3 +1,45 @@
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+// 🎙️ Voice input (Speech Recognition)
+const recognitionRef = useRef<any>(null);
+const [listening, setListening] = useState(false);
+
+const startListening = (lang: "ht" | "en") => {
+  const SpeechRecognition =
+    (window as any).SpeechRecognition ||
+    (window as any).webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    alert("Browser ou pa sipòte voice input.");
+    return;
+  }<div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+  <button onClick={() => startListening("ht")}>
+    🎙️ Pale Kreyòl
+  </button>
+
+  <button onClick={() => startListening("en")}>
+    🎙️ Speak English
+  </button>
+
+  {listening && <span>🎧 Listening...</span>}
+</div>
+x
+
+  const recognition = new SpeechRecognition();
+  recognition.lang = lang === "ht" ? "fr-HT" : "en-US";
+  recognition.interimResults = false;
+
+  recognition.onstart = () => setListening(true);
+
+  recognition.onresult = (event: any) => {
+    const text = event.results[0][0].transcript;
+    setSourceText(text); // ✅ SA A MATCHE AK KÒD OU
+  };
+
+  recognition.onend = () => setListening(false);
+
+  recognition.start();
+  recognitionRef.current = recognition;
+};
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { translateKreyolToEnglish, speakEnglishText } from '../services/geminiService';
