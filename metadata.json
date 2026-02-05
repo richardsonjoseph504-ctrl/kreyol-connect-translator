@@ -1,0 +1,7 @@
+{
+  "name": "Copy of Copy of Kreyol Translator Pro",
+  "description": "A high-performance Haitian Creole to English translator powered by Gemini, featuring real-time translation and high-quality speech synthesis.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
