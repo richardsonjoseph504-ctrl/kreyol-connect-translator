@@ -36,4 +36,4 @@ const Header: React.FC = () => {
   );
 };
 
-export default Header;
+Fix Header Export
