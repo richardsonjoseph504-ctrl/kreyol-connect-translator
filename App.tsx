@@ -1,16 +1,10 @@
-import { useRef } from "react";
+import Translator from "./components/Translator";
 
 export default function App() {
-  const testRef = useRef<HTMLDivElement | null>(null);
-
   return (
-    <div style={{ padding: 20 }}>
+    <div>
       <h1>Kreyòl Connect Translator</h1>
-      <p>Si ou wè mesaj sa a, App.tsx mache byen ✅</p>
-
-      <div ref={testRef}>
-        Test useRef OK
-      </div>
+      <Translator />
     </div>
   );
 }
