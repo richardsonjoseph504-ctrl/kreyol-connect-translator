@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from "react";
 type Lang = "ht" | "en";
 
 export default function Translator() {
-  // ✅ Hooks yo OBLIJE anndan component la
   const recognitionRef = useRef<any>(null);
   const [listening, setListening] = useState(false);
 
@@ -11,10 +10,9 @@ export default function Translator() {
   const [lang, setLang] = useState<Lang>("ht");
 
   useEffect(() => {
-    // optional: netwaye recognition lè component la demonte
     return () => {
       try {
-        if (recognitionRef.current) recognitionRef.current.stop();
+        recognitionRef.current?.stop();
       } catch {}
     };
   }, []);
@@ -30,7 +28,6 @@ export default function Translator() {
       return;
     }
 
-    // Kreye recognition a sèlman lè w ap itilize li
     const recognition = new SR();
     recognitionRef.current = recognition;
 
