@@ -1,4 +1,6 @@
-import Haiti from "./components/Haiti";
+import Haiti from "./Haiti";
+
+;
 
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
