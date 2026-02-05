@@ -7,6 +7,17 @@ const startListening = (lang: "ht" | "en") => {
   const SpeechRecognition =
     (window as any).SpeechRecognition ||
     (window as any).webkitSpeechRecognition;
+<div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+  <button onClick={() => startListening("ht")}>
+    🎙️ Pale Kreyòl
+  </button>
+
+  <button onClick={() => startListening("en")}>
+    🎙️ Speak English
+  </button>
+
+  {listening && <span>🎧 Listening...</span>}
+</div>
 
   if (!SpeechRecognition) {
     alert("Browser ou pa sipòte voice input.");
