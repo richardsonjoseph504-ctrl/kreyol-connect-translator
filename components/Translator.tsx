@@ -1,12 +1,14 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-// 🎙️ Voice input (Speech Recognition)
-const recognitionRef = useRef<any>(null);
-const [listening, setListening] = useState(false);
+import React, { useState, useCallback, useEffect, useRef } from "react";
 
-const startListening = (lang: "ht" | "en") => {
-  const SpeechRecognition =
-    (window as any).SpeechRecognition ||
-    (window as any).webkitSpeechRecognition;
+export default function Translator() {
+  const recognitionRef = useRef<any>(null);
+  const [listening, setListening] = useState(false);
+
+  const startListening = (lang: "ht" | "en") => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
 <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
   <button onClick={() => startListening("ht")}>
     🎙️ Pale Kreyòl
@@ -14,7 +16,17 @@ const startListening = (lang: "ht" | "en") => {
 
   <button onClick={() => startListening("en")}>
     🎙️ Speak English
-  </button>
+  </button>import React, { useState, useCallback, useEffect, useRef } from "react";
+
+export default function Translator() {
+  const recognitionRef = useRef<any>(null);
+  const [listening, setListening] = useState(false);
+
+  const startListening = (lang: "ht" | "en") => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
 
   {listening && <span>🎧 Listening...</span>}
 </div>
