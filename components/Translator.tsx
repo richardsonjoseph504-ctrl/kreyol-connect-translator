@@ -5,84 +5,164 @@ type Direction = "ht-en" | "en-ht";
 export default function Translator() {
   const [direction, setDirection] = useState<Direction>("ht-en");
   const [input, setInput] = useState("");
-  const [translated, setTranslated] = useState("");
-  const [listening, setListening] = useState(false);
+  const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
+  const [listening, setListening] = useState(false);
+  const [error, setError] = useState("");
 
   const recognitionRef = useRef<any>(null);
   const debounceRef = useRef<number | null>(null);
-  const lastFinalRef = useRef<string>("");
 
-  async function translateNow(text: string, dir: Direction) {
-    const t = text.trim();
-    if (!t) {
-      setTranslated("");
-      setErr("");
+  // ===== AI CALL (correction + translation) =====
+  const aiProcess = async (rawText: string, dir: Direction) => {
+    const text = rawText.trim();
+    if (!text) {
+      setOutput("");
       return;
     }
 
     setLoading(true);
-    setErr("");
+    setError("");
 
     try {
       const res = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: t, direction: dir }),
+        body: JSON.stringify({
+          text,
+          direction: dir,
+          // 🔑 signal backend to CORRECT + TRANSLATE
+          mode: "correct_and_translate",
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setTranslated("");
-        setErr(data?.error || "Gen erè pandan tradiksyon an.");
+        setError(data?.error || "AI error");
+        setOutput("");
       } else {
-        setTranslated(data?.translated || "");
-        setErr("");
+        setOutput(data.translated || "");
       }
     } catch {
-      setTranslated("");
-      setErr("Pa ka konekte ak /api/translate.");
+      setError("Pa ka konekte ak AI.");
+      setOutput("");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  // ✅ OTOMATIK: chak fwa input oswa direction chanje -> tradui
+  // ===== AUTO TRANSLATE (typing OR speech) =====
   useEffect(() => {
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
 
     debounceRef.current = window.setTimeout(() => {
-      translateNow(input, direction);
-    }, 450);
+      aiProcess(input, direction);
+    }, 700);
 
     return () => {
       if (debounceRef.current) window.clearTimeout(debounceRef.current);
     };
   }, [input, direction]);
 
-  // ✅ Setup SpeechRecognition (pale)
+  // ===== SPEECH RECOGNITION =====
   useEffect(() => {
     const SR =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
 
     if (!SR) return;
 
     const rec = new SR();
-    rec.interimResults = true;
-    rec.continuous = true;
+
+    rec.interimResults = false;
+    rec.continuous = false;
 
     rec.onresult = (e: any) => {
-      let interim = "";
-      let finals = lastFinalRef.current;
+      const spoken = e.results[0][0].transcript;
+      setInput(spoken);
+    };
 
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const chunk = e.results[i][0].transcript;
-        if (e.results[i].isFinal) finals = (finals + " " + chunk).trim();
-        else interim += chunk;
-      }
+    rec.onerror = () => setListening(false);
+    rec.onend = () => setListening(false);
 
-      lastFinalRef.current = finals;
-      const combined = (finals + " " + interim).trim();
-      if (combined) setInput(combined); // <- sa fè li trad
+    recognitionRef.current = rec;
+  }, []);
+
+  const startListening = (lang: "ht" | "en") => {
+    const rec = recognitionRef.current;
+    if (!rec) return;
+
+    // 🔑 Trick: use French mic for Kreyòl
+    rec.lang = lang === "ht" ? "fr-CA" : "en-US";
+
+    try {
+      setListening(true);
+      rec.start();
+    } catch {}
+  };
+
+  const stopListening = () => {
+    try {
+      recognitionRef.current?.stop();
+    } catch {}
+    setListening(false);
+  };
+
+  const swap = () => {
+    setDirection((d) => (d === "ht-en" ? "en-ht" : "ht-en"));
+    setInput("");
+    setOutput("");
+    setError("");
+    stopListening();
+  };
+
+  return (
+    <div style={{ maxWidth: 900 }}>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <button onClick={swap}>
+          {direction === "ht-en" ? "Kreyòl → English" : "English → Kreyòl"}
+        </button>
+
+        <button onClick={() => startListening("ht")} disabled={listening}>
+          🎤 Pale Kreyòl
+        </button>
+
+        <button onClick={() => startListening("en")} disabled={listening}>
+          🎤 Speak English
+        </button>
+
+        <button onClick={stopListening} disabled={!listening}>
+          ⛔ Stop
+        </button>
+
+        <span style={{ opacity: 0.75 }}>
+          {loading ? "AI ap travay..." : listening ? "Listening..." : "Idle"}
+        </span>
+      </div>
+
+      <div style={{ marginTop: 12 }}>
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder={
+            direction === "ht-en"
+              ? "Pale oswa ekri an Kreyòl (AI ap korije + tradui)"
+              : "Speak or type English (AI auto translate)"
+          }
+          style={{ width: "100%", height: 140, padding: 10 }}
+        />
+      </div>
+
+      <div style={{ marginTop: 12 }}>
+        <textarea
+          value={output}
+          readOnly
+          placeholder="Rezilta tradiksyon AI..."
+          style={{ width: "100%", height: 140, padding: 10 }}
+        />
+        {error && <div style={{ color: "crimson", marginTop: 6 }}>{error}</div>}
+      </div>
+    </div>
+  );
+}
