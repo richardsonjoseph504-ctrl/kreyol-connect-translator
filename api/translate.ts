@@ -3,7 +3,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 const API_KEY = process.env.GEMINI_API_KEY;
 
 // Gemini 3 Flash (REST)
-const MODEL = "gemini-3-flash-preview-02-05";
+model: "models/gemini-1.5-flash"
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 function extractText(json: any): string {
