@@ -111,10 +111,16 @@ export default function Translator() {
 
   const swap = () => {
     setDirection((d) => (d === "ht-en" ? "en-ht" : "ht-en"));
-    setInput("");
-    setOutput("");
-    setError("");
-    stopListening();
+    const translated =
+  data?.translated ??
+  data?.output ??
+  data?.text ??
+  data?.result ??
+  data?.translation ??
+  data?.data?.translated ??
+  "";
+
+setOutput(translated || ("(API reponn men mwen pa jwenn text) -> " + JSON.stringify(data)));
   };
 
   return (
