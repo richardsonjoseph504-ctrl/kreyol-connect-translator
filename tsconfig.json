@@ -16,6 +16,17 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src", "index.tsx", "index.html"],
-  "exclude": ["api", "node_modules"]
+  "include": [
+    "App.tsx",
+    "Haiti.tsx",
+    "index.tsx",
+    "types.ts",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "services/**/*.ts",
+    "services/**/*.tsx",
+    "utils/**/*.ts",
+    "utils/**/*.tsx"
+  ],
+  "exclude": ["api", "node_modules", "dist"]
 }
