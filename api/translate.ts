@@ -1,78 +1,42 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
-) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const apiKey = process.env.GLADIA_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ error: "Missing GLADIA_API_KEY" });
-    }
+    const key = process.env.OPENAI_API_KEY;
+    if (!key) return res.status(500).json({ error: "Missing OPENAI_API_KEY" });
 
-    const { audio_url } = req.body;
+    const { text, direction } = req.body || {};
+    if (!text || !direction) return res.status(400).json({ error: "text and direction required" });
 
-    if (!audio_url) {
-      return res.status(400).json({ error: "audio_url required" });
-    }
+    const system =
+      direction === "ht-en"
+        ? "Translate Haitian Creole to natural English. Return only the translation."
+        : "Translate English to Haitian Creole. Return only the translation.";
 
-    const response = await fetch("https://api.gladia.io/v2/transcription", {
+    const r = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "x-gladia-key": apiKey,
+        Authorization: `Bearer ${key}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        audio_url,
-        language: "ht",
-        translation: true,
-        translation_config: {
-          target_languages: ["en"],
-        },
+        model: "gpt-4o-mini",
+        temperature: 0.2,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: String(text) },
+        ],
       }),
     });
 
-    const data = await response.json();
-    return res.status(200).json(data);
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
-}export async function POST(req: Request) {
-  try {
-    const { text, direction } = await req.json();
+    const data = await r.json();
+    if (!r.ok) return res.status(502).json({ error: "OpenAI failed", details: data });
 
-    if (!text) {
-      return new Response(JSON.stringify({ error: "No text" }), { status: 400 });
-    }
-
-    const prompt =
-      direction === "ht-en"
-        ? `Translate this Haitian Creole to English:\n${text}`
-        : `Translate this English to Haitian Creole:\n${text}`;
-
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        }),
-      }
-    );
-
-    const data = await res.json();
-    const translated =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-    return new Response(JSON.stringify({ translated }), {
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (e) {
-    return new Response(JSON.stringify({ error: "API error" }), { status: 500 });
+    const result = data?.choices?.[0]?.message?.content?.trim() ?? "";
+    return res.status(200).json({ result });
+  } catch (e: any) {
+    return res.status(500).json({ error: "Server error", details: String(e?.message ?? e) });
   }
 }
