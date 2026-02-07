@@ -1,5 +1,14 @@
 {
   "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "jsx": "react-jsx",
+    "moduleResolution": "Bundler",
+    "strict": true
+  },
+  "exclude": ["api"]
+}{
+  "compilerOptions": {
     "target": "ES2022",
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
