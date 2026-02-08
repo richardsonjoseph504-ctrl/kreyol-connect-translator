@@ -1,4 +1,5 @@
-import React from "react";
+import { translateText } from "./services/TextTranslateService";
+import { translateVoice } from "./services/VoiceTranslateService";import React from "react";
 
 export default function Haiti() {
   return (
